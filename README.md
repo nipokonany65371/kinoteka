@@ -2,7 +2,7 @@
 
 Projekt zespołowy na laboratorium **Bezpieczeństwo serwerów i aplikacji Web** (PWr, semestr zimowy 2026/27, grupa 2, środa).
 
-Prosta aplikacja webowa z logowaniem (sesja), interakcją użytkowników (forum, chat lub komentarze) i bazą danych, którą w kolejnych laboratoriach wdrażamy w chmurze publicznej, zabezpieczamy i testujemy.
+Prosta aplikacja webowa z logowaniem, interakcją użytkowników i bazą danych, którą w kolejnych laboratoriach wdrażamy w chmurze publicznej, zabezpieczamy i testujemy.
 
 ## Technologie
 
