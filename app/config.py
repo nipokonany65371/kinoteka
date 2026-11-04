@@ -25,6 +25,16 @@ class Config:
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = _env_bool("SESSION_COOKIE_SECURE")
 
+    # Blokada konta po serii nieudanych logowań (timeout).
+    LOGIN_MAX_ATTEMPTS = int(os.environ.get("LOGIN_MAX_ATTEMPTS", "5"))
+    LOGIN_LOCK_MINUTES = int(os.environ.get("LOGIN_LOCK_MINUTES", "15"))
+
+    # Panel admina leży pod losowym prefiksem /panel-<token>. Bez ADMIN_PANEL_TOKEN
+    # token jest wyliczany z SECRET_KEY (stały między restartami i instancjami).
+    ADMIN_PANEL_TOKEN = os.environ.get("ADMIN_PANEL_TOKEN")
+    # Po tylu minutach bez aktywności w panelu admin jest wylogowywany, a panel daje 404.
+    ADMIN_SESSION_MINUTES = int(os.environ.get("ADMIN_SESSION_MINUTES", "15"))
+
     # Ile proxy (np. load balancer) stoi przed aplikacją. 0 = brak.
     TRUSTED_PROXIES = int(os.environ.get("TRUSTED_PROXIES", "0"))
 

@@ -21,6 +21,9 @@ class User(UserMixin, db.Model):
     # Nadpisuje is_active z UserMixin: zablokowany użytkownik nie może się zalogować.
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utcnow)
+    # Licznik nieudanych logowań z rzędu i koniec czasowej blokady konta.
+    failed_logins = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+    locked_until = db.Column(db.DateTime(timezone=True))
 
     reviews = db.relationship("Review", back_populates="author", cascade="all, delete-orphan")
     comments = db.relationship("Comment", back_populates="author", cascade="all, delete-orphan")
@@ -30,6 +33,15 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    @property
+    def is_locked(self):
+        if self.locked_until is None:
+            return False
+        until = self.locked_until
+        if until.tzinfo is None:  # SQLite zwraca daty bez strefy
+            until = until.replace(tzinfo=timezone.utc)
+        return until > utcnow()
 
     @property
     def is_admin(self):

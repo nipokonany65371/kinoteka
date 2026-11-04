@@ -1,14 +1,15 @@
 import os
 
 import click
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from markupsafe import Markup, escape
 from sqlalchemy import func, select
+from werkzeug.exceptions import NotFound
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from .config import Config
 from .extensions import csrf, db, limiter, login_manager, migrate
-from .security import log_event, setup_security_logger
+from .security import admin_area_gate, admin_prefix, log_event, setup_security_logger
 from .storage import LocalStorage
 
 
@@ -22,6 +23,10 @@ def create_app(config_class=Config):
     if proxies:
         # Za load balancerem prawdziwe IP klienta jest w X-Forwarded-For.
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=proxies, x_proto=proxies, x_host=proxies)
+
+    app.config["ADMIN_PREFIX"] = admin_prefix(app)
+    # Bramka panelu musi być przed csrf.init_app, żeby obcy dostawali 404, a nie 400 z CSRF.
+    app.before_request(admin_area_gate)
 
     db.init_app(app)
     migrate.init_app(app, db)
@@ -42,7 +47,7 @@ def create_app(config_class=Config):
     app.register_blueprint(main.bp)
     app.register_blueprint(auth.bp)
     app.register_blueprint(movies.bp)
-    app.register_blueprint(admin.bp)
+    app.register_blueprint(admin.bp, url_prefix=app.config["ADMIN_PREFIX"])
 
     app.add_template_filter(nl2br)
     app.add_template_filter(format_dt, "dt")
@@ -72,6 +77,11 @@ ERROR_MESSAGES = {
 }
 
 
+def _is_admin_path(app, path):
+    prefix = app.config["ADMIN_PREFIX"]
+    return path == prefix or path.startswith(prefix + "/")
+
+
 def _register_error_handlers(app):
     def handler(error):
         code = getattr(error, "code", 500) or 500
@@ -81,12 +91,24 @@ def _register_error_handlers(app):
             log_event("rate_limited")
         return render_template("errors.html", code=code, message=ERROR_MESSAGES.get(code, "Błąd.")), code
 
+    def hidden_admin_area(error):
+        # Metoda niedozwolona w panelu też wygląda jak brak strony.
+        if _is_admin_path(app, request.path):
+            return handler(NotFound())
+        return handler(error)
+
     for code in ERROR_MESSAGES:
         app.register_error_handler(code, handler)
+    app.register_error_handler(405, hidden_admin_area)
 
 
 def _register_cli(app):
     from .models import User
+
+    @app.cli.command("admin-url")
+    def admin_url():
+        """Wypisuje ukrytą ścieżkę panelu admina."""
+        click.echo(app.config["ADMIN_PREFIX"] + "/")
 
     @app.cli.command("create-admin")
     @click.argument("username")

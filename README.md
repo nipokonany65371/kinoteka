@@ -27,7 +27,7 @@ Serwis z recenzjami filmów. UI to celowo czysty HTML bez CSS i JS (wygląd nie 
 - filmy: lista z wyszukiwarką, dodawanie z plakatem, usuwanie (autor lub admin)
 - recenzje z oceną 1-10 (jedna na film na osobę), edycja przez autora
 - komentarze pod recenzjami
-- panel admina: blokowanie i odblokowywanie kont
+- panel admina: blokowanie i odblokowywanie kont (pod ukrytym adresem, patrz niżej)
 
 ### Struktura
 
@@ -38,12 +38,13 @@ app/
   models.py       User, Movie, Review, Comment
   auth.py         rejestracja, logowanie, profil
   movies.py       filmy, recenzje, komentarze, plakaty
-  admin.py        panel admina
+  admin.py        panel admina (pod prefiksem /panel-<token>)
   main.py         /health dla load balancera
-  security.py     log zdarzeń bezpieczeństwa, kontrola uprawnień
+  security.py     log zdarzeń bezpieczeństwa, kontrola uprawnień, bramka panelu admina
   storage.py      walidacja i zapis plakatów
   templates/      szablony HTML
 migrations/       migracje bazy (Alembic)
+tests/            testy blokady logowania i panelu admina (pytest, SQLite w pamięci)
 ```
 
 ## Uruchomienie lokalne (DEV)
@@ -92,15 +93,43 @@ Po zmianie modeli w `models.py`: `flask db migrate -m "opis zmiany"`, a potem `f
 | SQL injection | ORM SQLAlchemy, wszystkie zapytania parametryzowane |
 | XSS | autoescape w Jinja, nowe linie zamieniane bezpiecznie (`nl2br`) |
 | CSRF | token CSRF w każdym formularzu (Flask-WTF), akcje zmieniające dane tylko POST |
-| Łamanie haseł | hashe scrypt (Werkzeug), limit 5 nieudanych logowań na minutę z IP |
+| Łamanie haseł | hashe scrypt (Werkzeug), limit 5 nieudanych logowań na minutę z IP, blokada konta na 15 min po 5 nieudanych próbach z rzędu |
 | Enumeracja kont | ten sam komunikat i podobny czas odpowiedzi dla złego loginu i złego hasła |
 | Przejęcie sesji | ciasteczko HttpOnly i SameSite=Lax, sesja 30 min, unieważnienie przy zmianie IP lub przeglądarki, czyszczenie sesji przy logowaniu |
 | Złośliwy upload | weryfikacja zawartości przez Pillow, ponowne kodowanie obrazka, losowa nazwa pliku, limit 2 MB |
 | IDOR | sprawdzanie właściciela przy edycji i usuwaniu, panel admina tylko dla roli admin |
+| Wykrycie panelu admina | panel pod losowym prefiksem `/panel-<token>`, bez linku w menu, dla wszystkich poza adminem zwykłe 404 (bez przekierowań, 403 i 400) |
 | Open redirect | parametr `next` po logowaniu tylko na ścieżki w aplikacji |
 | Brak śladów ataku | log zdarzeń `SECURITY` (logowania, blokady, odmowy dostępu, odrzucone pliki) |
 
 Do zrobienia w L7: nagłówki bezpieczeństwa (CSP, HSTS, X-Frame-Options itd.), `SESSION_COOKIE_SECURE=true` za HTTPS, WAF.
+
+## Blokada logowania (timeout)
+
+Dwie warstwy, bo na uczelni wiele osób wychodzi z jednego IP:
+
+1. **Limit z IP**: 5 nieudanych prób logowania na minutę (Flask-Limiter), potem błąd 429.
+2. **Blokada konta**: po 5 nieudanych próbach z rzędu na to samo konto jest ono zablokowane na 15 minut. W tym czasie nawet poprawne hasło jest odrzucane, a komunikat jest ten sam co przy złym haśle, więc nie da się sprawdzić, które loginy istnieją. Poprawne logowanie zeruje licznik. Licznik i czas blokady są w tabeli `users` (kolumny `failed_logins`, `locked_until`), dlatego działają przy kilku instancjach aplikacji.
+
+Ustawienia (zmienne środowiskowe): `LOGIN_MAX_ATTEMPTS` (domyślnie 5), `LOGIN_LOCK_MINUTES` (domyślnie 15). Skutek uboczny: osoba znająca nazwę konta może je zablokować na 15 minut. Za to nie da się go zgadywać hasłami.
+
+## Panel admina pod ukrytym adresem
+
+- Panel nie jest pod `/admin`, tylko pod `/panel-<token>/`. Token to 20 znaków wyliczonych z `SECRET_KEY` (stały między restartami i instancjami) albo własny z `ADMIN_PANEL_TOKEN` (12-64 litery i cyfry).
+- Adres admin sprawdza komendą `flask admin-url`. Nie ma go w menu, w logowaniu ani w żadnym linku.
+- Dostęp ma tylko zalogowany użytkownik z rolą admin i **ważną sesją admina**. Każdy inny (gość, zwykły użytkownik, wygasła sesja) dostaje takie samo 404 jak dla nieistniejącej strony: bez przekierowania na logowanie, bez 403, bez 400 z CSRF. To dotyczy też podstron (`/panel-<token>/cokolwiek`) i niedozwolonych metod.
+- Sesja admina wygasa po `ADMIN_SESSION_MINUTES` (domyślnie 15) bez aktywności w panelu. Po wygaśnięciu panel zwraca 404, a użytkownik jest wylogowany z całej aplikacji i musi zalogować się ponownie.
+- W panelu jest przycisk "Wyloguj z panelu" (kończy sesję w całej aplikacji).
+- Odmowy i wygaśnięcia trafiają do logu `SECURITY` (`admin_area_denied`, `admin_session_expired`).
+
+## Testy
+
+```bash
+pip install pytest
+python -m pytest tests -q
+```
+
+Testy używają SQLite w pamięci, nie potrzebują Dockera.
 
 ## Uwagi do wdrożenia w chmurze (L3, L4)
 

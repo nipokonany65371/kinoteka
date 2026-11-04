@@ -14,7 +14,6 @@
 {% if current_user.is_authenticated %}
 | <a href="{{ url_for('movies.new') }}">Dodaj film</a>
 | <a href="{{ url_for('auth.profile', username=current_user.username) }}">Mój profil ({{ current_user.username }})</a>
-{% if current_user.is_admin %}| <a href="{{ url_for('admin.index') }}">Panel admina</a>{% endif %}
 {{ post_button(url_for('auth.logout'), 'Wyloguj') }}
 {% else %}
 | <a href="{{ url_for('auth.login') }}">Zaloguj</a>
