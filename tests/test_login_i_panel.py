@@ -83,11 +83,33 @@ def test_stary_adres_admin_to_404(client):
     assert client.get("/admin/").status_code == 404
 
 
-def test_menu_nie_zawiera_linku_do_panelu(client, app):
+def test_menu_zawiera_link_do_panelu_po_zalogowaniu_admina(client, app):
     login(client)
+    html = client.get("/").get_data(as_text=True)
+    assert f'href="{app.config["ADMIN_PREFIX"]}/">Panel admina</a>' in html
+
+
+@pytest.mark.parametrize("user", [None, "zwykly", "admin"])
+def test_menu_ukrywa_link_bez_waznej_sesji_admina(client, app, user):
+    if user:
+        login(client, user)
+    if user == "admin":
+        with client.session_transaction() as sess:
+            sess["admin_until"] = int(time.time()) - 1
     html = client.get("/").get_data(as_text=True)
     assert app.config["ADMIN_PREFIX"] not in html
     assert "Panel admina" not in html
+
+
+def test_hsts_na_https_za_proxy():
+    class Production(TestConfig):
+        SESSION_COOKIE_SECURE = True
+        TRUSTED_PROXIES = 1
+
+    client = create_app(Production).test_client()
+    assert "Strict-Transport-Security" not in client.get("/live").headers
+    response = client.get("/live", headers={"X-Forwarded-Proto": "https"})
+    assert response.headers["Strict-Transport-Security"] == "max-age=31536000"
 
 
 def test_niezalogowany_dostaje_404_bez_przekierowania(client, app):

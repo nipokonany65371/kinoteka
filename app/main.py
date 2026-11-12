@@ -7,10 +7,16 @@ from .extensions import db, limiter
 bp = Blueprint("main", __name__)
 
 
+@bp.get("/live")
+@limiter.exempt
+def live():
+    return {"status": "ok"}
+
+
 @bp.route("/health")
 @limiter.exempt
 def health():
-    """Health check dla load balancera: 200 gdy baza odpowiada, 503 gdy nie."""
+    """Zwraca 200, gdy baza odpowiada, lub 503 przy błędzie połączenia."""
     try:
         db.session.execute(text("SELECT 1"))
     except SQLAlchemyError:

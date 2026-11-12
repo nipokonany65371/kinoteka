@@ -14,6 +14,10 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY")
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
+    if os.environ.get("DB_POOL_SIZE"):
+        SQLALCHEMY_ENGINE_OPTIONS["pool_size"] = int(os.environ["DB_POOL_SIZE"])
+    if os.environ.get("DB_MAX_OVERFLOW"):
+        SQLALCHEMY_ENGINE_OPTIONS["max_overflow"] = int(os.environ["DB_MAX_OVERFLOW"])
 
     # Pliki (plakaty). Domyślnie instance/uploads, w chmurze docelowo storage obiektowy.
     UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER")

@@ -16,6 +16,7 @@ services:
   web:
     profiles: ["app"]
     build: .
+    command: ["sh", "-c", "flask db upgrade && exec gunicorn --bind 0.0.0.0:8000 --workers 2 wsgi:app"]
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}

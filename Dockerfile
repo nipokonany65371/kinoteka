@@ -18,4 +18,4 @@ RUN mkdir -p /app/instance/uploads && chown -R appuser:appuser /app/instance
 USER appuser
 EXPOSE 8000
 
-CMD ["sh", "-c", "flask db upgrade && gunicorn --bind 0.0.0.0:8000 --workers 2 wsgi:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "wsgi:app"]

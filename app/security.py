@@ -72,6 +72,10 @@ def start_admin_session():
     session["admin_until"] = int(time.time()) + current_app.config["ADMIN_SESSION_MINUTES"] * 60
 
 
+def admin_session_active():
+    return int(session.get("admin_until", 0)) > time.time()
+
+
 def _in_admin_area(path):
     prefix = current_app.config["ADMIN_PREFIX"]
     return path == prefix or path.startswith(prefix + "/")
@@ -89,7 +93,7 @@ def admin_area_gate():
     if not (current_user.is_authenticated and current_user.is_admin):
         log_event("admin_area_denied", path=request.path[:200])
         abort(404)
-    if int(session.get("admin_until", 0)) <= time.time():
+    if not admin_session_active():
         # Sesja admina wygasła: wylogowanie całkowite, a panel udaje, że go nie ma.
         log_event("admin_session_expired", path=request.path[:200])
         logout_user()

@@ -21,7 +21,7 @@ Prosta aplikacja webowa z logowaniem, interakcją użytkowników i bazą danych,
 
 ## Aplikacja: Kinoteka
 
-Serwis z recenzjami filmów. UI to celowo czysty HTML bez CSS i JS (wygląd nie wpływa na ocenę).
+Serwis z recenzjami filmów. Widoki używają HTML i wspólnego arkusza CSS.
 
 - rejestracja, logowanie, wylogowanie, profil użytkownika
 - filmy: lista z wyszukiwarką, dodawanie z plakatem, usuwanie (autor lub admin)
@@ -98,11 +98,11 @@ Po zmianie modeli w `models.py`: `flask db migrate -m "opis zmiany"`, a potem `f
 | Przejęcie sesji | ciasteczko HttpOnly i SameSite=Lax, sesja 30 min, unieważnienie przy zmianie IP lub przeglądarki, czyszczenie sesji przy logowaniu |
 | Złośliwy upload | weryfikacja zawartości przez Pillow, ponowne kodowanie obrazka, losowa nazwa pliku, limit 2 MB |
 | IDOR | sprawdzanie właściciela przy edycji i usuwaniu, panel admina tylko dla roli admin |
-| Wykrycie panelu admina | panel pod losowym prefiksem `/panel-<token>`, bez linku w menu, dla wszystkich poza adminem zwykłe 404 (bez przekierowań, 403 i 400) |
+| Wykrycie panelu admina | panel pod losowym prefiksem `/panel-<token>`, link w menu wyłącznie dla administratora z ważną sesją panelu, dla pozostałych zwykłe 404 |
 | Open redirect | parametr `next` po logowaniu tylko na ścieżki w aplikacji |
 | Brak śladów ataku | log zdarzeń `SECURITY` (logowania, blokady, odmowy dostępu, odrzucone pliki) |
 
-Do zrobienia w L7: nagłówki bezpieczeństwa (CSP, HSTS, X-Frame-Options itd.), `SESSION_COOKIE_SECURE=true` za HTTPS, WAF.
+Do zrobienia w L7: pozostałe nagłówki bezpieczeństwa (np. CSP i X-Frame-Options) oraz WAF.
 
 ## Blokada logowania (timeout)
 
@@ -116,7 +116,7 @@ Ustawienia (zmienne środowiskowe): `LOGIN_MAX_ATTEMPTS` (domyślnie 5), `LOGIN_
 ## Panel admina pod ukrytym adresem
 
 - Panel nie jest pod `/admin`, tylko pod `/panel-<token>/`. Token to 20 znaków wyliczonych z `SECRET_KEY` (stały między restartami i instancjami) albo własny z `ADMIN_PANEL_TOKEN` (12-64 litery i cyfry).
-- Adres admin sprawdza komendą `flask admin-url`. Nie ma go w menu, w logowaniu ani w żadnym linku.
+- Po zalogowaniu jako administrator w menu pojawia się przycisk „Panel admina”. Adres można też sprawdzić poleceniem `flask admin-url`.
 - Dostęp ma tylko zalogowany użytkownik z rolą admin i **ważną sesją admina**. Każdy inny (gość, zwykły użytkownik, wygasła sesja) dostaje takie samo 404 jak dla nieistniejącej strony: bez przekierowania na logowanie, bez 403, bez 400 z CSRF. To dotyczy też podstron (`/panel-<token>/cokolwiek`) i niedozwolonych metod.
 - Sesja admina wygasa po `ADMIN_SESSION_MINUTES` (domyślnie 15) bez aktywności w panelu. Po wygaśnięciu panel zwraca 404, a użytkownik jest wylogowany z całej aplikacji i musi zalogować się ponownie.
 - W panelu jest przycisk "Wyloguj z panelu" (kończy sesję w całej aplikacji).
@@ -133,10 +133,14 @@ Testy używają SQLite w pamięci, nie potrzebują Dockera.
 
 ## Uwagi do wdrożenia w chmurze (L3, L4)
 
-- Za load balancerem ustaw `TRUSTED_PROXIES=1`, inaczej aplikacja zobaczy IP load balancera zamiast klienta (rate limit i ochrona sesji przestaną działać sensownie).
-- Plakaty są na lokalnym dysku (`instance/uploads`). Przy kilku instancjach trzeba podmienić `LocalStorage` w `storage.py` na storage obiektowy (S3, GCS).
-- Rate limit trzyma liczniki w pamięci procesu. Przy kilku instancjach ustaw `RATELIMIT_STORAGE_URI` na Redisa.
-- Daty są zapisywane w UTC.
+[Dokumentacja architektury L3 i wyniki testów](docs/L3-architektura-kinoteka.md)
+
+- Azure Container Apps przekierowuje HTTP na HTTPS na ingressie i przekazuje ruch do Gunicorna na porcie `8000`. Przy `TRUSTED_PROXIES=1` oraz `SESSION_COOKIE_SECURE=true` aplikacja ustawia bezpieczne ciasteczka i wysyła HSTS w odpowiedziach HTTPS.
+- Wszystkie repliki używają tego samego `SECRET_KEY`. Azure Files udostępnia plakatom wspólny katalog `UPLOAD_FOLDER`, a `RATELIMIT_STORAGE_URI` wskazuje na wewnętrzny Redis.
+- `GET /live` sprawdza działanie procesu aplikacji. `GET /health` dodatkowo sprawdza bazę. Daty są zapisywane w UTC.
+- Kontener uruchamia Gunicorna. Migracje w Azure wykonuje zadanie `kinoteka-migrate` przed publikacją rewizji. W lokalnym Docker Compose migracje uruchamia polecenie serwisu `web`.
+
+Skrypt `infra/azure/deploy.ps1` uruchamia wdrożenie z aktywnej sesji Azure CLI w PowerShell 7. Gdy obraz jest zbudowany w Dockerze, przekaż jego tag jako `-LocalImage`. Skrypt obsługuje też archiwum przez `-ImageArchive` i `-Crane` oraz obraz już opublikowany w rejestrze przez `-PublishedTag`. Domyślny region to `francecentral`. Utworzenie zasobów wykorzystuje kredyt Azure.
 
 ## Zakres prac
 

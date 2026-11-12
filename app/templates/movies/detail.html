@@ -2,10 +2,10 @@
 {% from "_macros.html" import field, post_button %}
 {% block title %}{{ movie.title }} | Kinoteka{% endblock %}
 {% block content %}
-<h2>{{ movie.title }}{% if movie.year %} ({{ movie.year }}){% endif %}</h2>
+<h1>{{ movie.title }}{% if movie.year %} ({{ movie.year }}){% endif %}</h1>
 
 {% if movie.poster_filename %}
-<p><img src="{{ url_for('movies.poster', filename=movie.poster_filename) }}" alt="Plakat: {{ movie.title }}" width="300"></p>
+<p><img class="poster" src="{{ url_for('movies.poster', filename=movie.poster_filename) }}" alt="Plakat: {{ movie.title }}" width="300"></p>
 {% endif %}
 
 <p>

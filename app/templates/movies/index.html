@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Filmy</h2>
+<h1>Filmy</h1>
 
-<form method="get" action="{{ url_for('movies.index') }}">
-<label for="q">Szukaj po tytule</label>
-<input type="search" id="q" name="q" value="{{ q }}" maxlength="100">
+<form class="search" method="get" action="{{ url_for('movies.index') }}" role="search">
+<input type="search" id="q" name="q" value="{{ q }}" maxlength="100" placeholder="Szukaj po tytule" aria-label="Szukaj po tytule">
 <button type="submit">Szukaj</button>
 {% if q %}<a href="{{ url_for('movies.index') }}">Wyczyść</a>{% endif %}
 </form>
 
 {% if rows %}
-<table border="1" cellpadding="4">
+<div class="table-wrap">
+<table>
 <thead>
 <tr><th>Tytuł</th><th>Rok</th><th>Średnia ocena</th><th>Recenzje</th></tr>
 </thead>
@@ -25,12 +25,20 @@
 {% endfor %}
 </tbody>
 </table>
+</div>
 {% else %}
-<p>{% if q %}Nic nie znaleziono.{% else %}Nie ma jeszcze żadnych filmów.{% endif %}</p>
+<div class="empty-state">
+<p>{% if q %}Nie znaleziono filmów.{% else %}Nie ma jeszcze żadnych filmów.{% endif %}</p>
+{% if not q and current_user.is_authenticated %}
+<a class="button" href="{{ url_for('movies.new') }}">Dodaj pierwszy film</a>
+{% endif %}
+</div>
 {% endif %}
 
-<p>
+{% if page > 1 or has_next %}
+<nav class="pagination" aria-label="Strony wyników">
 {% if page > 1 %}<a href="{{ url_for('movies.index', q=q or None, page=page - 1) }}">Poprzednia</a>{% endif %}
 {% if has_next %}<a href="{{ url_for('movies.index', q=q or None, page=page + 1) }}">Następna</a>{% endif %}
-</p>
+</nav>
+{% endif %}
 {% endblock %}

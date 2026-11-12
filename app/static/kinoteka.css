@@ -1,0 +1,147 @@
+:root {
+    color-scheme: light;
+    --ink: #211d2b;
+    --muted: #615a70;
+    --paper: #faf8f4;
+    --surface: #fff;
+    --line: #e3dfe7;
+    --accent: #5735a5;
+    --accent-hover: #452887;
+    --soft: #f1ebfc;
+    font: 1rem / 1.55 Inter, "Segoe UI", system-ui, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body { margin: 0; color: var(--ink); background: var(--paper); }
+a { color: var(--accent); text-underline-offset: .22em; }
+a:hover { color: var(--accent-hover); }
+button, input, textarea, select { font: inherit; }
+:focus-visible { outline: 2px solid #9166e4; outline-offset: 3px; }
+
+.site-header { background: #211a31; color: #fff; }
+
+.site-header-inner {
+    width: min(100% - 2.5rem, 68rem);
+    min-height: 4.5rem;
+    margin-inline: auto;
+    padding-block: .75rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: .65rem 1.5rem;
+}
+
+.wordmark {
+    color: #fff;
+    font-size: 1.3rem;
+    font-weight: 750;
+    letter-spacing: -.035em;
+    text-decoration: none;
+}
+
+.site-nav, .pagination, .search {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .65rem 1rem;
+}
+
+.site-nav { font-size: .92rem; }
+.site-nav > a:not(.button) { color: #f3eef9; text-decoration: none; }
+.wordmark:hover, .site-nav > a:not(.button):hover { color: #fff; text-decoration: underline; }
+.site-nav form { margin: 0; }
+
+.page {
+    width: min(100% - 2.5rem, 68rem);
+    margin-inline: auto;
+    padding-block: clamp(2rem, 7vw, 4.5rem);
+    overflow-wrap: anywhere;
+}
+
+.page h1 { margin: 0 0 1.25rem; font-size: clamp(2rem, 5vw, 3rem); line-height: 1.12; letter-spacing: -.045em; }
+.page h3, .page h4, .page h5 { line-height: 1.3; }
+.page small { color: var(--muted); }
+.page hr { border: 0; border-top: 1px solid var(--line); margin-block: 1.75rem; }
+
+.page-form {
+    max-width: 34rem;
+    margin-block: clamp(1.5rem, 6vw, 4rem);
+    padding: clamp(1.25rem, 4vw, 2rem);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: .85rem;
+}
+
+.search { margin-bottom: 1.5rem; }
+.search input { flex: 0 1 25rem; min-width: 0; }
+
+input:not([type="hidden"], [type="submit"], [type="file"], [type="checkbox"], [type="radio"]), textarea, select {
+    width: 100%;
+    padding: .55rem .7rem;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid #bcb4c8;
+    border-radius: .45rem;
+}
+
+input[type="file"] { max-width: 100%; }
+textarea { display: block; max-width: 100%; resize: vertical; }
+.field { display: grid; gap: .3rem; max-width: 34rem; margin-block: 1rem; }
+.field label { font-weight: 600; }
+.field-error { color: #9a2639; font-size: .9rem; }
+
+.button, button, input[type="submit"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.5rem;
+    padding: .45rem .85rem;
+    border: 1px solid transparent;
+    border-radius: .45rem;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 650;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.button:hover, button:hover, input[type="submit"]:hover { background: var(--accent-hover); color: #fff; }
+.button-admin { color: #35205f; background: #e2d3ff; }
+.button-admin:hover { color: #261849; background: #f1e9ff; }
+.site-nav button { border-color: #776a8c; background: transparent; }
+.site-nav button:hover { background: #3a2d50; }
+.inline-action { display: inline-block; }
+
+.messages, .empty-state {
+    margin: 0 0 1.5rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--line);
+    border-radius: .65rem;
+}
+
+.messages { list-style: none; background: var(--soft); }
+.empty-state { background: var(--surface); color: var(--muted); }
+.empty-state p { margin: 0; }
+.empty-state .button { margin-top: .8rem; }
+
+.table-wrap {
+    overflow-x: auto;
+    margin-bottom: 1.25rem;
+    border: 1px solid var(--line);
+    border-radius: .65rem;
+    background: var(--surface);
+}
+
+table { width: 100%; border-collapse: collapse; text-align: left; }
+th, td { padding: .7rem .9rem; border-bottom: 1px solid var(--line); overflow-wrap: normal; }
+th { background: var(--soft); }
+tbody tr:last-child td { border-bottom: 0; }
+.poster { display: block; max-width: 100%; height: auto; border-radius: .5rem; }
+
+@media (max-width: 36rem) {
+    .site-nav { gap: .5rem .7rem; }
+    .search input { flex: 1 1 12rem; }
+    th, td { padding: .55rem .65rem; }
+}

@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% from "_macros.html" import field %}
 {% block title %}Edycja recenzji | Kinoteka{% endblock %}
+{% block page_class %}page-form{% endblock %}
 {% block content %}
-<h2>Edycja recenzji: {{ review.movie.title }}</h2>
+<h1>Edycja recenzji: {{ review.movie.title }}</h1>
 <form method="post" novalidate>
 {{ form.hidden_tag() }}
 {{ field(form.rating, min=1, max=10) }}

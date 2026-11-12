@@ -9,7 +9,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from .config import Config
 from .extensions import csrf, db, limiter, login_manager, migrate
-from .security import admin_area_gate, admin_prefix, log_event, setup_security_logger
+from .security import admin_area_gate, admin_prefix, admin_session_active, log_event, setup_security_logger
 from .storage import LocalStorage
 
 
@@ -22,11 +22,18 @@ def create_app(config_class=Config):
     proxies = app.config["TRUSTED_PROXIES"]
     if proxies:
         # Za load balancerem prawdziwe IP klienta jest w X-Forwarded-For.
-        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=proxies, x_proto=proxies, x_host=proxies)
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=proxies, x_proto=proxies)
 
     app.config["ADMIN_PREFIX"] = admin_prefix(app)
     # Bramka panelu musi być przed csrf.init_app, żeby obcy dostawali 404, a nie 400 z CSRF.
     app.before_request(admin_area_gate)
+
+    if app.config["SESSION_COOKIE_SECURE"]:
+        @app.after_request
+        def add_hsts(response):
+            if request.is_secure:
+                response.headers.setdefault("Strict-Transport-Security", "max-age=31536000")
+            return response
 
     db.init_app(app)
     migrate.init_app(app, db)
@@ -51,6 +58,7 @@ def create_app(config_class=Config):
 
     app.add_template_filter(nl2br)
     app.add_template_filter(format_dt, "dt")
+    app.add_template_global(admin_session_active)
     _register_error_handlers(app)
     _register_cli(app)
     return app

@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% from "_macros.html" import field %}
 {% block title %}Dodaj film | Kinoteka{% endblock %}
+{% block page_class %}page-form{% endblock %}
 {% block content %}
-<h2>Dodaj film</h2>
+<h1>Dodaj film</h1>
 <form method="post" enctype="multipart/form-data" novalidate>
 {{ form.hidden_tag() }}
 {{ field(form.title) }}

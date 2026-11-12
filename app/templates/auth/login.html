@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% from "_macros.html" import field %}
 {% block title %}Logowanie | Kinoteka{% endblock %}
+{% block page_class %}page-form{% endblock %}
 {% block content %}
-<h2>Logowanie</h2>
+<h1>Logowanie</h1>
 <form method="post" novalidate>
 {{ form.hidden_tag() }}
 {{ field(form.username, autocomplete="username") }}

@@ -2,9 +2,10 @@
 {% from "_macros.html" import post_button %}
 {% block title %}Panel admina | Kinoteka{% endblock %}
 {% block content %}
-<h2>Panel admina: użytkownicy</h2>
+<h1>Panel admina</h1>
 <p>Treści (filmy, recenzje, komentarze) admin usuwa bezpośrednio na stronach filmów.</p>
-<table border="1" cellpadding="4">
+<div class="table-wrap">
+<table>
 <thead>
 <tr><th>ID</th><th>Nazwa</th><th>E-mail</th><th>Rola</th><th>Status</th><th>Założone</th><th>Akcja</th></tr>
 </thead>
@@ -26,5 +27,6 @@
 {% endfor %}
 </tbody>
 </table>
+</div>
 {{ post_button(url_for('admin.logout'), 'Wyloguj z panelu') }}
 {% endblock %}
